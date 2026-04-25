@@ -94,6 +94,17 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _definitionNativeMeta = const VerificationMeta(
+    'definitionNative',
+  );
+  @override
+  late final GeneratedColumn<String> definitionNative = GeneratedColumn<String>(
+    'definition_native',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _exampleMeta = const VerificationMeta(
     'example',
   );
@@ -147,6 +158,7 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
     audioUk,
     partOfSpeech,
     definition,
+    definitionNative,
     example,
     romanization,
     source,
@@ -222,6 +234,15 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
         definition.isAcceptableOrUnknown(data['definition']!, _definitionMeta),
       );
     }
+    if (data.containsKey('definition_native')) {
+      context.handle(
+        _definitionNativeMeta,
+        definitionNative.isAcceptableOrUnknown(
+          data['definition_native']!,
+          _definitionNativeMeta,
+        ),
+      );
+    }
     if (data.containsKey('example')) {
       context.handle(
         _exampleMeta,
@@ -290,6 +311,10 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
         DriftSqlType.string,
         data['${effectivePrefix}definition'],
       ),
+      definitionNative: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_native'],
+      ),
       example: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}example'],
@@ -324,6 +349,7 @@ class Word extends DataClass implements Insertable<Word> {
   final String? audioUk;
   final String? partOfSpeech;
   final String? definition;
+  final String? definitionNative;
   final String? example;
   final String? romanization;
   final String source;
@@ -337,6 +363,7 @@ class Word extends DataClass implements Insertable<Word> {
     this.audioUk,
     this.partOfSpeech,
     this.definition,
+    this.definitionNative,
     this.example,
     this.romanization,
     required this.source,
@@ -364,6 +391,9 @@ class Word extends DataClass implements Insertable<Word> {
     }
     if (!nullToAbsent || definition != null) {
       map['definition'] = Variable<String>(definition);
+    }
+    if (!nullToAbsent || definitionNative != null) {
+      map['definition_native'] = Variable<String>(definitionNative);
     }
     if (!nullToAbsent || example != null) {
       map['example'] = Variable<String>(example);
@@ -400,6 +430,9 @@ class Word extends DataClass implements Insertable<Word> {
       definition: definition == null && nullToAbsent
           ? const Value.absent()
           : Value(definition),
+      definitionNative: definitionNative == null && nullToAbsent
+          ? const Value.absent()
+          : Value(definitionNative),
       example: example == null && nullToAbsent
           ? const Value.absent()
           : Value(example),
@@ -427,6 +460,7 @@ class Word extends DataClass implements Insertable<Word> {
       audioUk: serializer.fromJson<String?>(json['audioUk']),
       partOfSpeech: serializer.fromJson<String?>(json['partOfSpeech']),
       definition: serializer.fromJson<String?>(json['definition']),
+      definitionNative: serializer.fromJson<String?>(json['definitionNative']),
       example: serializer.fromJson<String?>(json['example']),
       romanization: serializer.fromJson<String?>(json['romanization']),
       source: serializer.fromJson<String>(json['source']),
@@ -445,6 +479,7 @@ class Word extends DataClass implements Insertable<Word> {
       'audioUk': serializer.toJson<String?>(audioUk),
       'partOfSpeech': serializer.toJson<String?>(partOfSpeech),
       'definition': serializer.toJson<String?>(definition),
+      'definitionNative': serializer.toJson<String?>(definitionNative),
       'example': serializer.toJson<String?>(example),
       'romanization': serializer.toJson<String?>(romanization),
       'source': serializer.toJson<String>(source),
@@ -461,6 +496,7 @@ class Word extends DataClass implements Insertable<Word> {
     Value<String?> audioUk = const Value.absent(),
     Value<String?> partOfSpeech = const Value.absent(),
     Value<String?> definition = const Value.absent(),
+    Value<String?> definitionNative = const Value.absent(),
     Value<String?> example = const Value.absent(),
     Value<String?> romanization = const Value.absent(),
     String? source,
@@ -474,6 +510,9 @@ class Word extends DataClass implements Insertable<Word> {
     audioUk: audioUk.present ? audioUk.value : this.audioUk,
     partOfSpeech: partOfSpeech.present ? partOfSpeech.value : this.partOfSpeech,
     definition: definition.present ? definition.value : this.definition,
+    definitionNative: definitionNative.present
+        ? definitionNative.value
+        : this.definitionNative,
     example: example.present ? example.value : this.example,
     romanization: romanization.present ? romanization.value : this.romanization,
     source: source ?? this.source,
@@ -495,6 +534,9 @@ class Word extends DataClass implements Insertable<Word> {
       definition: data.definition.present
           ? data.definition.value
           : this.definition,
+      definitionNative: data.definitionNative.present
+          ? data.definitionNative.value
+          : this.definitionNative,
       example: data.example.present ? data.example.value : this.example,
       romanization: data.romanization.present
           ? data.romanization.value
@@ -515,6 +557,7 @@ class Word extends DataClass implements Insertable<Word> {
           ..write('audioUk: $audioUk, ')
           ..write('partOfSpeech: $partOfSpeech, ')
           ..write('definition: $definition, ')
+          ..write('definitionNative: $definitionNative, ')
           ..write('example: $example, ')
           ..write('romanization: $romanization, ')
           ..write('source: $source, ')
@@ -533,6 +576,7 @@ class Word extends DataClass implements Insertable<Word> {
     audioUk,
     partOfSpeech,
     definition,
+    definitionNative,
     example,
     romanization,
     source,
@@ -550,6 +594,7 @@ class Word extends DataClass implements Insertable<Word> {
           other.audioUk == this.audioUk &&
           other.partOfSpeech == this.partOfSpeech &&
           other.definition == this.definition &&
+          other.definitionNative == this.definitionNative &&
           other.example == this.example &&
           other.romanization == this.romanization &&
           other.source == this.source &&
@@ -565,6 +610,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
   final Value<String?> audioUk;
   final Value<String?> partOfSpeech;
   final Value<String?> definition;
+  final Value<String?> definitionNative;
   final Value<String?> example;
   final Value<String?> romanization;
   final Value<String> source;
@@ -579,6 +625,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
     this.audioUk = const Value.absent(),
     this.partOfSpeech = const Value.absent(),
     this.definition = const Value.absent(),
+    this.definitionNative = const Value.absent(),
     this.example = const Value.absent(),
     this.romanization = const Value.absent(),
     this.source = const Value.absent(),
@@ -594,6 +641,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
     this.audioUk = const Value.absent(),
     this.partOfSpeech = const Value.absent(),
     this.definition = const Value.absent(),
+    this.definitionNative = const Value.absent(),
     this.example = const Value.absent(),
     this.romanization = const Value.absent(),
     this.source = const Value.absent(),
@@ -610,6 +658,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
     Expression<String>? audioUk,
     Expression<String>? partOfSpeech,
     Expression<String>? definition,
+    Expression<String>? definitionNative,
     Expression<String>? example,
     Expression<String>? romanization,
     Expression<String>? source,
@@ -625,6 +674,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
       if (audioUk != null) 'audio_uk': audioUk,
       if (partOfSpeech != null) 'part_of_speech': partOfSpeech,
       if (definition != null) 'definition': definition,
+      if (definitionNative != null) 'definition_native': definitionNative,
       if (example != null) 'example': example,
       if (romanization != null) 'romanization': romanization,
       if (source != null) 'source': source,
@@ -642,6 +692,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
     Value<String?>? audioUk,
     Value<String?>? partOfSpeech,
     Value<String?>? definition,
+    Value<String?>? definitionNative,
     Value<String?>? example,
     Value<String?>? romanization,
     Value<String>? source,
@@ -657,6 +708,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
       audioUk: audioUk ?? this.audioUk,
       partOfSpeech: partOfSpeech ?? this.partOfSpeech,
       definition: definition ?? this.definition,
+      definitionNative: definitionNative ?? this.definitionNative,
       example: example ?? this.example,
       romanization: romanization ?? this.romanization,
       source: source ?? this.source,
@@ -692,6 +744,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
     if (definition.present) {
       map['definition'] = Variable<String>(definition.value);
     }
+    if (definitionNative.present) {
+      map['definition_native'] = Variable<String>(definitionNative.value);
+    }
     if (example.present) {
       map['example'] = Variable<String>(example.value);
     }
@@ -721,6 +776,7 @@ class WordsCompanion extends UpdateCompanion<Word> {
           ..write('audioUk: $audioUk, ')
           ..write('partOfSpeech: $partOfSpeech, ')
           ..write('definition: $definition, ')
+          ..write('definitionNative: $definitionNative, ')
           ..write('example: $example, ')
           ..write('romanization: $romanization, ')
           ..write('source: $source, ')
@@ -1731,6 +1787,7 @@ typedef $$WordsTableCreateCompanionBuilder =
       Value<String?> audioUk,
       Value<String?> partOfSpeech,
       Value<String?> definition,
+      Value<String?> definitionNative,
       Value<String?> example,
       Value<String?> romanization,
       Value<String> source,
@@ -1747,6 +1804,7 @@ typedef $$WordsTableUpdateCompanionBuilder =
       Value<String?> audioUk,
       Value<String?> partOfSpeech,
       Value<String?> definition,
+      Value<String?> definitionNative,
       Value<String?> example,
       Value<String?> romanization,
       Value<String> source,
@@ -1799,6 +1857,11 @@ class $$WordsTableFilterComposer extends Composer<_$AppDatabase, $WordsTable> {
 
   ColumnFilters<String> get definition => $composableBuilder(
     column: $table.definition,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get definitionNative => $composableBuilder(
+    column: $table.definitionNative,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1872,6 +1935,11 @@ class $$WordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get definitionNative => $composableBuilder(
+    column: $table.definitionNative,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get example => $composableBuilder(
     column: $table.example,
     builder: (column) => ColumnOrderings(column),
@@ -1932,6 +2000,11 @@ class $$WordsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get definitionNative => $composableBuilder(
+    column: $table.definitionNative,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get example =>
       $composableBuilder(column: $table.example, builder: (column) => column);
 
@@ -1983,6 +2056,7 @@ class $$WordsTableTableManager
                 Value<String?> audioUk = const Value.absent(),
                 Value<String?> partOfSpeech = const Value.absent(),
                 Value<String?> definition = const Value.absent(),
+                Value<String?> definitionNative = const Value.absent(),
                 Value<String?> example = const Value.absent(),
                 Value<String?> romanization = const Value.absent(),
                 Value<String> source = const Value.absent(),
@@ -1997,6 +2071,7 @@ class $$WordsTableTableManager
                 audioUk: audioUk,
                 partOfSpeech: partOfSpeech,
                 definition: definition,
+                definitionNative: definitionNative,
                 example: example,
                 romanization: romanization,
                 source: source,
@@ -2013,6 +2088,7 @@ class $$WordsTableTableManager
                 Value<String?> audioUk = const Value.absent(),
                 Value<String?> partOfSpeech = const Value.absent(),
                 Value<String?> definition = const Value.absent(),
+                Value<String?> definitionNative = const Value.absent(),
                 Value<String?> example = const Value.absent(),
                 Value<String?> romanization = const Value.absent(),
                 Value<String> source = const Value.absent(),
@@ -2027,6 +2103,7 @@ class $$WordsTableTableManager
                 audioUk: audioUk,
                 partOfSpeech: partOfSpeech,
                 definition: definition,
+                definitionNative: definitionNative,
                 example: example,
                 romanization: romanization,
                 source: source,

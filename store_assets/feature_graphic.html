@@ -1,0 +1,292 @@
+<!--
+=============================================================
+  FEATURE GRAPHIC — Google Play Store
+  Kích thước yêu cầu: 1024 × 500 px
+=============================================================
+
+  HƯỚNG DẪN CHỤP ẢNH ĐÚNG KÍCH THƯỚC:
+
+  1. Mở file này bằng Google Chrome (hoặc Edge)
+     - Nhấp chuột phải vào file → "Open with" → Chrome
+
+  2. Đặt Zoom về đúng 100%
+     - Nhấn Ctrl + 0  (Windows) hoặc Cmd + 0  (Mac)
+     - Hoặc vào menu ⋮ → Zoom → 100%
+     - Kiểm tra: Ctrl + Shift + I → Console → gõ:
+       window.devicePixelRatio  (phải ra 1)
+
+  3. Mở DevTools để chụp vùng chính xác
+     - Nhấn Ctrl + Shift + I → chọn tab "Elements"
+     - Nhấn Ctrl + Shift + P → gõ "Capture node screenshot"
+     - Click vào thẻ <body> trong Elements panel
+     - Chọn "Capture node screenshot" → file PNG tự tải về
+
+  4. Kiểm tra file PNG tải về phải đúng 1024 × 500 px
+     - Nếu sai: kiểm tra lại Zoom = 100% và devicePixelRatio = 1
+
+  Lưu ý: Đừng dùng "Full page screenshot" vì sẽ bao gồm
+  cả phần ngoài banner. Chỉ dùng "Capture node screenshot"
+  trên thẻ <body> hoặc thẻ <div id="banner">.
+=============================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1024" />
+  <title>Feature Graphic — Vocabulary App</title>
+  <style>
+    /* Reset hoàn toàn để screenshot chính xác */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 1024px;
+      height: 500px;
+      overflow: hidden;
+      background: #0284C7;
+      font-family: -apple-system, 'Segoe UI', 'Inter', Arial, sans-serif;
+    }
+
+    /* ── Banner chính ── */
+    #banner {
+      width: 1024px;
+      height: 500px;
+      background: linear-gradient(135deg, #0284C7 0%, #0F4C9E 40%, #5B21B6 100%);
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 64px;
+      overflow: hidden;
+    }
+
+    /* Vòng tròn trang trí nền */
+    #banner::before {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      top: -140px;
+      right: -80px;
+      pointer-events: none;
+    }
+    #banner::after {
+      content: '';
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      bottom: -100px;
+      left: 300px;
+      pointer-events: none;
+    }
+
+    /* ── Cột trái: icon ── */
+    .col-icon {
+      flex-shrink: 0;
+      margin-right: 52px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .app-icon {
+      width: 130px;
+      height: 130px;
+      border-radius: 28px;
+      object-fit: cover;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.35),
+        0 2px 8px rgba(0, 0, 0, 0.2);
+      display: block;
+    }
+
+    /* Vòng sáng viền ngoài icon */
+    .icon-glow {
+      position: absolute;
+      inset: -6px;
+      border-radius: 34px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
+      z-index: -1;
+    }
+
+    /* ── Cột giữa: text chính ── */
+    .col-text {
+      flex: 1;
+      position: relative;
+      z-index: 2;
+    }
+
+    .app-name {
+      font-size: 62px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .tagline {
+      font-size: 19px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.80);
+      letter-spacing: 0.3px;
+      margin-bottom: 34px;
+      line-height: 1.4;
+    }
+
+    /* ── Feature badges (pills) ── */
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.13);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      padding: 7px 16px;
+      color: #FFFFFF;
+      font-size: 13.5px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+
+    .badge .icon {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    /* ── Cột phải: accent deco ── */
+    .col-deco {
+      flex-shrink: 0;
+      margin-left: 40px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    /* Số ngôn ngữ nổi bật */
+    .lang-count {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      border-radius: 20px;
+      padding: 18px 28px;
+      backdrop-filter: blur(10px);
+    }
+
+    .lang-count .number {
+      font-size: 52px;
+      font-weight: 900;
+      color: #FFFFFF;
+      line-height: 1;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+
+    .lang-count .label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.70);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-top: 4px;
+    }
+
+    /* Offline badge */
+    .offline-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      border-radius: 12px;
+      padding: 10px 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .offline-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ADE80;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px #4ADE80;
+    }
+
+    .offline-badge span {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.80);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="banner">
+
+    <!-- Cột trái: App Icon -->
+    <div class="col-icon">
+      <div class="icon-glow"></div>
+      <img
+        class="app-icon"
+        src="../assets/icon_source.png"
+        alt="Vocabulary App Icon"
+      />
+    </div>
+
+    <!-- Cột giữa: Tên app + tagline + badges -->
+    <div class="col-text">
+      <div class="app-name">Vocabulary</div>
+      <div class="tagline">Learn any language. One word at a time.</div>
+
+      <div class="badges">
+        <div class="badge">
+          <span class="icon">🧠</span>
+          <span>Spaced Repetition (SM-2)</span>
+        </div>
+        <div class="badge">
+          <span class="icon">🤖</span>
+          <span>AI Chat Assistant</span>
+        </div>
+        <div class="badge">
+          <span class="icon">🔊</span>
+          <span>Native Pronunciation</span>
+        </div>
+        <div class="badge">
+          <span class="icon">📖</span>
+          <span>Built-in Dictionary</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cột phải: Decoration số ngôn ngữ + offline -->
+    <div class="col-deco">
+      <div class="lang-count">
+        <div class="number">19<span style="font-size:32px;font-weight:700;">+</span></div>
+        <div class="label">Languages</div>
+      </div>
+      <div class="offline-badge">
+        <div class="dot"></div>
+        <span>Works Offline</span>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

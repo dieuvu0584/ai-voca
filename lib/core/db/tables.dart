@@ -10,6 +10,8 @@ class Words extends Table {
   TextColumn get audioUk => text().nullable()();
   TextColumn get partOfSpeech => text().nullable()();
   TextColumn get definition => text().nullable()();
+  // Nghĩa trong ngôn ngữ native của user (defLang) — AI translated
+  TextColumn get definitionNative => text().nullable()();
   TextColumn get example => text().nullable()();
   TextColumn get romanization => text().nullable()();
   TextColumn get source =>

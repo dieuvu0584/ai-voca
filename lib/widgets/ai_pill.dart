@@ -11,9 +11,8 @@ class AiPill extends ConsumerWidget {
     final settings = ref.watch(aiSettingsProvider);
 
     final (String label, Color color) = switch (settings.mode) {
-      AIMode.appDefault => ('AI', const Color(0xFF6C3FC7)),
       AIMode.userKey => ('AI', const Color(0xFF27AE60)),
-      AIMode.none => ('No AI', Colors.grey),
+      AIMode.none || AIMode.appDefault => ('No AI', Colors.grey),
     };
 
     return Container(

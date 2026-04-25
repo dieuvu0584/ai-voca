@@ -4,6 +4,9 @@ import '../../app.dart';
 import '../../core/providers.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/ai_settings.dart';
+import '../../core/l10n/strings.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/languages.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -18,33 +21,39 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final List<Map<String, String>> _messages = [];
   bool _isTyping = false;
 
-  String get _systemPrompt {
+  String _buildSystemPrompt(String guiLangCode) {
     final langState = ref.read(languageProvider);
-    return 'Ban la tro ly day tu vung thong minh. '
-        'Ngon ngu chinh: ${langState.primary.name}. '
-        '${langState.secondary != null ? "Ngon ngu phu: ${langState.secondary!.name}. " : ""}'
-        'Tra loi bang tieng Viet. Giai thich ro rang, cho vi du cu the. '
-        'Khi nguoi dung hoi ve tu vung, cho: nghia, cach dung, vi du, tu dong nghia/trai nghia.';
+    final guiLang = kLanguages.firstWhere(
+      (l) => l.code == guiLangCode,
+      orElse: () => kLanguages.first,
+    );
+    return 'You are a smart vocabulary learning assistant. '
+        'Target language: ${langState.primary.name}. '
+        '${langState.secondary != null ? 'Secondary language: ${langState.secondary!.name}. ' : ''}'
+        'Always respond in ${guiLang.native} (${guiLang.name}). '
+        'Explain clearly with concrete examples. '
+        'When asked about vocabulary, provide: meaning, usage, examples, synonyms/antonyms.';
   }
 
-  List<_QuickButton> get _quickButtons {
+  List<_QuickButton> _quickButtons(String lang) {
     final langState = ref.read(languageProvider);
+    final targetLang = langState.primary.name;
     return [
       _QuickButton(
-        label: 'Tu moi hom nay',
-        prompt: 'Goi y 5 tu vung ${langState.primary.name} moi phu hop voi trinh do trung cap.',
+        label: tr(lang, 'new_words_today'),
+        prompt: trArgs(lang, 'prompt_new_words', {'lang': targetLang}),
       ),
       _QuickButton(
-        label: 'Giai thich ngu phap',
-        prompt: 'Giai thich mot diem ngu phap thuong gap trong ${langState.primary.name}.',
+        label: tr(lang, 'explain_grammar'),
+        prompt: trArgs(lang, 'prompt_grammar', {'lang': targetLang}),
       ),
       _QuickButton(
-        label: 'Hoi thoai mau',
-        prompt: 'Viet mot doan hoi thoai ngan bang ${langState.primary.name} ve chu de mua sam.',
+        label: tr(lang, 'sample_conversation'),
+        prompt: trArgs(lang, 'prompt_conversation', {'lang': targetLang}),
       ),
       _QuickButton(
-        label: 'Thanh ngu',
-        prompt: 'Goi y 3 thanh ngu/tuc ngu trong ${langState.primary.name} va giai thich.',
+        label: tr(lang, 'idioms'),
+        prompt: trArgs(lang, 'prompt_idioms', {'lang': targetLang}),
       ),
     ];
   }
@@ -63,16 +72,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     _controller.clear();
     _scrollToBottom();
 
+    final lang = ref.read(guiLangProvider);
     final response = await aiService.complete(
       messages: _messages,
-      systemPrompt: _systemPrompt,
+      systemPrompt: _buildSystemPrompt(lang),
     );
 
     if (mounted) {
       setState(() {
         _messages.add({
           'role': 'assistant',
-          'content': response ?? 'Xin loi, khong the tra loi luc nay.',
+          'content': response ?? tr(lang, 'sorry_cant_answer'),
         });
         _isTyping = false;
       });
@@ -102,25 +112,36 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   @override
   Widget build(BuildContext context) {
     final aiSettings = ref.watch(aiSettingsProvider);
+    final lang = ref.watch(guiLangProvider);
 
     if (aiSettings.mode == AIMode.none) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Hoi AI')),
-        body: const Center(
-          child: Text('AI da tat. Bat AI trong Cai dat de su dung.'),
+        appBar: AppBar(title: Text(tr(lang, 'ask_ai'))),
+        body: Center(
+          child: Text(tr(lang, 'ai_disabled')),
         ),
       );
     }
 
+    final providerIcon = aiProviderIcon(aiSettings.provider);
+    final providerColor = appColors(context).primary;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hoi AI'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(providerIcon, size: 18, color: providerColor),
+            const SizedBox(width: 6),
+            Text(tr(lang, 'ask_ai')),
+          ],
+        ),
         actions: [
           if (_messages.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () => setState(() => _messages.clear()),
-              tooltip: 'Xoa lich su',
+              tooltip: tr(lang, 'clear_history'),
             ),
         ],
       ),
@@ -130,7 +151,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           children: [
             Expanded(
               child: _messages.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(lang, providerIcon, providerColor)
                   : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
@@ -145,7 +166,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     },
                   ),
           ),
-          // Input
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -164,7 +184,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      hintText: 'Nhap cau hoi...',
+                      hintText: tr(lang, 'enter_question'),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24)),
                       contentPadding: const EdgeInsets.symmetric(
@@ -188,21 +208,22 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String lang, IconData providerIcon, Color providerColor) {
+    final cs = appColors(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           const SizedBox(height: 32),
-          Icon(Icons.auto_awesome, size: 48, color: secondaryColor.withValues(alpha: 0.5)),
+          Icon(providerIcon, size: 48, color: providerColor.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          const Text(
-            'Hoi AI bat cu dieu gi!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          Text(
+            tr(lang, 'ask_ai_anything'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
-            'AI se giup ban hoc tu vung, ngu phap, va nhieu hon',
+            tr(lang, 'ai_help_desc'),
             style: TextStyle(color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
@@ -211,13 +232,13 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             spacing: 8,
             runSpacing: 8,
             alignment: WrapAlignment.center,
-            children: _quickButtons
+            children: _quickButtons(lang)
                 .map((b) => ActionChip(
                       label: Text(b.label),
                       onPressed: () => _send(b.prompt),
                       backgroundColor:
-                          secondaryColor.withValues(alpha: 0.08),
-                      labelStyle: const TextStyle(color: secondaryColor),
+                          cs.secondary.withValues(alpha: 0.08),
+                      labelStyle: TextStyle(color: cs.secondary),
                     ))
                 .toList(),
           ),
@@ -227,6 +248,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   }
 
   Widget _buildMessage(String content, bool isUser) {
+    final cs = appColors(context);
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -235,7 +257,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         constraints:
             BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
         decoration: BoxDecoration(
-          color: isUser ? enColor : Colors.white,
+          color: isUser ? cs.primary : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -325,7 +347,7 @@ class _AnimatedDotState extends State<_AnimatedDot>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, __) => Container(
+      builder: (_, _) => Container(
         width: 8,
         height: 8,
         decoration: BoxDecoration(

@@ -1,5 +1,5 @@
 name: vocab_ai
-description: "Vocab AI - Ung dung hoc tu vung da ngon ngu"
+description: "Vocabulary - Ung dung hoc tu vung da ngon ngu"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -29,15 +29,23 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
+
   # Secure storage
   flutter_secure_storage: ^9.2.2
   # Home widget
   home_widget: ^0.5.0
   # Shared prefs (non-sensitive settings)
   shared_preferences: ^2.3.2
+  # In-App Purchase
+  in_app_purchase: ^3.2.0
+  # Pinyin cho tiếng Trung (offline, không cần API key)
+  lpinyin: ^2.0.2
   # Utils
   intl: ^0.19.0
   uuid: ^4.4.0
+  # Giữ màn hình sáng khi autoplay
+  wakelock_plus: ^1.2.8
+  flutter_timezone: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -49,3 +57,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon_source.png
+    - assets/wordlists/
+    - assets/databases/

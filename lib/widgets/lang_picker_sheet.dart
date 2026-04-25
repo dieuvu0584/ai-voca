@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../app.dart';
 import '../core/providers.dart';
+import '../core/l10n/strings.dart';
+import '../core/theme/app_theme.dart';
 import '../data/languages.dart';
-import '../data/vocab_data.dart';
+
 
 class LangPickerSheet extends ConsumerStatefulWidget {
   final bool isPrimary;
@@ -19,7 +20,9 @@ class _LangPickerSheetState extends ConsumerState<LangPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = appColors(context);
     final langState = ref.watch(languageProvider);
+    final lang = ref.watch(guiLangProvider);
     final filtered = kLanguages.where((l) {
       final q = _search.toLowerCase();
       return l.name.toLowerCase().contains(q) ||
@@ -47,7 +50,7 @@ class _LangPickerSheetState extends ConsumerState<LangPickerSheet> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Tim ngon ngu...',
+                hintText: tr(lang, 'search_language'),
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -62,34 +65,32 @@ class _LangPickerSheetState extends ConsumerState<LangPickerSheet> {
               controller: scrollController,
               itemCount: filtered.length,
               itemBuilder: (_, i) {
-                final lang = filtered[i];
-                final isPrimary = lang.code == langState.primary.code;
-                final isSecondary = lang.code == langState.secondary?.code;
-                final wordCount = kBuiltinVocab[lang.code]?.length ?? 0;
+                final l = filtered[i];
+                final isPrimary = l.code == langState.primary.code;
+                final isSecondary = l.code == langState.secondary?.code;
 
                 return ListTile(
-                  leading: Text(lang.flag, style: const TextStyle(fontSize: 28)),
+                  leading: Text(l.flag, style: const TextStyle(fontSize: 28)),
                   title: Text(
-                    lang.name,
+                    l.name,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: isPrimary
-                          ? enColor
+                          ? cs.primary
                           : isSecondary
-                              ? secondaryColor
+                              ? cs.secondary
                               : null,
                     ),
                   ),
-                  subtitle: Text('${lang.native}  ·  $wordCount tu offline'),
+                  subtitle: Text(l.native),
                   trailing: isPrimary
-                      ? const Icon(Icons.star, color: enColor)
+                      ? Icon(Icons.star, color: cs.primary)
                       : isSecondary
-                          ? const Icon(Icons.check_circle,
-                              color: secondaryColor)
+                          ? Icon(Icons.check_circle, color: cs.secondary)
                           : null,
                   onTap: () {
                     if (widget.isPrimary) {
-                      ref.read(languageProvider.notifier).setPrimary(lang);
+                      ref.read(languageProvider.notifier).setPrimary(l);
                     } else {
                       if (isSecondary) {
                         ref
@@ -98,14 +99,13 @@ class _LangPickerSheetState extends ConsumerState<LangPickerSheet> {
                       } else {
                         ref
                             .read(languageProvider.notifier)
-                            .setSecondary(lang);
+                            .setSecondary(l);
                       }
                     }
                     Navigator.pop(context);
                   },
                   onLongPress: () {
-                    // Long press → set as primary
-                    ref.read(languageProvider.notifier).setPrimary(lang);
+                    ref.read(languageProvider.notifier).setPrimary(l);
                     Navigator.pop(context);
                   },
                 );

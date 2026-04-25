@@ -12,10 +12,22 @@ class TtsService {
     await _tts.setPitch(1.0);
   }
 
-  /// Phát âm từ — ưu tiên MP3 URL, fallback TTS
+  /// Phát âm tự động (auto-TTS) — chỉ dùng flutter_tts, ổn định hơn
   Future<void> speak(String text, {String? audioUrl, String? ttsLang}) async {
+    await _tts.stop();
+    if (ttsLang != null) {
+      await _tts.setLanguage(ttsLang);
+    }
+    await _tts.speak(text);
+  }
+
+  /// Phát âm bằng MP3 URL (khi user nhấn nút 🔊) — fallback TTS nếu fail
+  Future<void> speakWithAudio(String text,
+      {String? audioUrl, String? ttsLang}) async {
+    await _tts.stop();
     if (audioUrl != null && audioUrl.isNotEmpty) {
       try {
+        await _audioPlayer.stop();
         await _audioPlayer.setUrl(audioUrl);
         await _audioPlayer.play();
         return;
@@ -23,7 +35,6 @@ class TtsService {
         // Fallback to TTS
       }
     }
-
     if (ttsLang != null) {
       await _tts.setLanguage(ttsLang);
     }

@@ -24,12 +24,14 @@ class DictEntry {
 
 class FreeDictApi {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://api.dictionaryapi.dev/api/v2/entries/en',
+    baseUrl: 'https://api.dictionaryapi.dev/api/v2/entries',
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 15),
   ));
 
-  Future<DictEntry?> lookup(String word) async {
+  Future<DictEntry?> lookup(String word, {String apiLangCode = 'en_US'}) async {
     try {
-      final response = await _dio.get('/$word');
+      final response = await _dio.get('/$apiLangCode/$word');
       final entries = response.data as List;
       if (entries.isEmpty) return null;
 

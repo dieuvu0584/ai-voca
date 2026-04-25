@@ -4,6 +4,7 @@ import 'db/database.dart';
 import 'tts/tts_service.dart';
 import 'dictionary/dict_service.dart';
 import 'notifications/notif_service.dart';
+import 'vocab_sync/vocab_sync_service.dart';
 import '../data/languages.dart';
 
 // Database
@@ -74,18 +75,61 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
     }
   }
 
-  Future<void> swapPrimarySecondary() async {
-    if (state.secondary == null) return;
-    final oldPrimary = state.primary;
-    final oldSecondary = state.secondary!;
-    await setPrimary(oldSecondary);
-    await setSecondary(oldPrimary);
-  }
 }
 
 final languageProvider =
     StateNotifierProvider<LanguageNotifier, LanguageState>(
         (ref) => LanguageNotifier());
 
+// Definition language (ngôn ngữ hiển thị nghĩa của từ)
+class DefLangNotifier extends StateNotifier<String> {
+  final String _prefKey;
+
+  DefLangNotifier(this._prefKey) : super('en-US');
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString(_prefKey) ?? 'en-US';
+  }
+
+  Future<void> setLang(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, code);
+    state = code;
+  }
+}
+
+/// Ngôn ngữ dịch nghĩa — dùng chung cho cả ngôn ngữ chính lẫn phụ
+final defLangPrimaryProvider =
+    StateNotifierProvider<DefLangNotifier, String>(
+        (ref) => DefLangNotifier('def_lang_primary'));
+
+// GUI language
+class GuiLangNotifier extends StateNotifier<String> {
+  GuiLangNotifier() : super('en-US');
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString('gui_lang') ?? 'en-US';
+  }
+
+  Future<void> setLang(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gui_lang', code);
+    state = code;
+  }
+}
+
+final guiLangProvider =
+    StateNotifierProvider<GuiLangNotifier, String>(
+        (ref) => GuiLangNotifier());
+
 // Online status
 final isOnlineProvider = StateProvider<bool>((ref) => true);
+
+// Trigger reload stats trên homepage (increment để notify)
+final statsRefreshProvider = StateProvider<int>((ref) => 0);
+
+// Vocab sync
+final vocabSyncProvider = Provider<VocabSyncService>(
+    (ref) => VocabSyncService(ref.watch(databaseProvider)));

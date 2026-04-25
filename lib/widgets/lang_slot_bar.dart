@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../app.dart';
+import '../core/premium/premium_notifier.dart';
 import '../core/providers.dart';
-import '../data/languages.dart';
+import '../core/theme/app_theme.dart';
 import 'lang_picker_sheet.dart';
 
 class LangSlotBar extends ConsumerWidget {
@@ -11,59 +11,17 @@ class LangSlotBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final langState = ref.watch(languageProvider);
+    final isPremium = ref.watch(premiumProvider);
+    final cs = appColors(context);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Primary slot
-          Expanded(
-            child: _LangSlot(
-              label: 'Ngon ngu chinh',
-              language: langState.primary,
-              isPrimary: true,
-              onTap: () => _showPicker(context, ref, isPrimary: true),
-            ),
-          ),
-          // VS divider
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              'VS',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: Colors.grey[400],
-              ),
-            ),
-          ),
-          // Secondary slot
-          Expanded(
-            child: langState.secondary != null
-                ? _LangSlot(
-                    label: 'Ngon ngu phu',
-                    language: langState.secondary!,
-                    isPrimary: false,
-                    onTap: () => _showPicker(context, ref, isPrimary: false),
-                    onRemove: () =>
-                        ref.read(languageProvider.notifier).setSecondary(null),
-                  )
-                : _AddSlot(
-                    onTap: () => _showPicker(context, ref, isPrimary: false),
-                  ),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: _LangSelectTile(
+        flag: langState.primary.flag,
+        name: langState.primary.name,
+        color: cs.primary,
+        onTap: () => _showPicker(context, ref, isPrimary: true),
+        showPremiumBadge: !isPremium,
       ),
     );
   }
@@ -81,95 +39,79 @@ class LangSlotBar extends ConsumerWidget {
   }
 }
 
-class _LangSlot extends StatelessWidget {
-  final String label;
-  final Language language;
-  final bool isPrimary;
+class _LangSelectTile extends StatelessWidget {
+  final String? flag;
+  final String name;
+  final Color color;
   final VoidCallback onTap;
-  final VoidCallback? onRemove;
+  final bool showPremiumBadge;
 
-  const _LangSlot({
-    required this.label,
-    required this.language,
-    required this.isPrimary,
+  const _LangSelectTile({
+    required this.flag,
+    required this.name,
+    required this.color,
     required this.onTap,
-    this.onRemove,
+    this.showPremiumBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isPrimary)
-                  const Icon(Icons.star, size: 14, color: enColor),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
-                ),
-                if (onRemove != null) ...[
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: onRemove,
-                    child: Icon(Icons.close, size: 14, color: Colors.grey[400]),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${language.flag} ${language.name}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isPrimary ? enColor : secondaryColor,
-              ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AddSlot extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _AddSlot({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
+        child: Row(
           children: [
-            Text(
-              'Ngon ngu phu',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '+ Them',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[400],
+            if (flag != null)
+              Text(flag!, style: const TextStyle(fontSize: 22)),
+            if (flag != null) const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
+            if (showPremiumBadge) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock, size: 11, color: Colors.amber),
+                    SizedBox(width: 3),
+                    Text(
+                      'Premium',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.amber,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Icon(Icons.arrow_drop_down, color: color),
           ],
         ),
       ),

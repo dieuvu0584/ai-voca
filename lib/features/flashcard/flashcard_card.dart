@@ -1,319 +1,426 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/db/database.dart';
+import '../../core/providers.dart';
+import '../../core/ai/ai_service.dart';
+import '../../core/ai/ai_settings.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/l10n/strings.dart';
+import '../../data/languages.dart';
 
-class FlashcardCard extends StatefulWidget {
+class FlashcardCard extends ConsumerStatefulWidget {
   final Word word;
-  final bool isFlipped;
-  final VoidCallback onFlip;
+  final Word? secondaryWord;
+  final bool isFetchingSecondary;
+  final bool isSecondaryAIBusy;
+  final Language? secondaryLanguage;
   final String? aiExplanation;
   final bool aiLoading;
   final TtsService ttsService;
   final String ttsLang;
+  final String guiLang;
+  final void Function(Word enriched)? onEnriched;
 
   const FlashcardCard({
     super.key,
     required this.word,
-    required this.isFlipped,
-    required this.onFlip,
+    this.secondaryWord,
+    this.isFetchingSecondary = false,
+    this.isSecondaryAIBusy = false,
+    this.secondaryLanguage,
     this.aiExplanation,
     this.aiLoading = false,
     required this.ttsService,
     required this.ttsLang,
+    required this.guiLang,
+    this.onEnriched,
   });
 
   @override
-  State<FlashcardCard> createState() => _FlashcardCardState();
+  ConsumerState<FlashcardCard> createState() => _FlashcardCardState();
 }
 
-class _FlashcardCardState extends State<FlashcardCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+class _FlashcardCardState extends ConsumerState<FlashcardCard> {
+  Word? _enrichedWord;
+  bool _enriching = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _enrichIfNeeded(widget.word);
   }
 
   @override
-  void didUpdateWidget(FlashcardCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isFlipped != oldWidget.isFlipped) {
-      if (widget.isFlipped) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
+  void didUpdateWidget(FlashcardCard old) {
+    super.didUpdateWidget(old);
+    if (old.word.word != widget.word.word ||
+        old.word.langCode != widget.word.langCode) {
+      // Reset cả _enrichedWord lẫn _enriching để từ mới được enrich ngay
+      // (không bị block bởi enrichment đang chạy dở của từ cũ)
+      _enrichedWord = null;
+      _enriching = false;
+      _enrichIfNeeded(widget.word);
+    }
+  }
+
+  Future<void> _enrichIfNeeded(Word word) async {
+    if (_enriching) return;
+
+    final defLangCode = ref.read(defLangPrimaryProvider);
+    final needNative = defLangCode != word.langCode &&
+        (word.definitionNative == null || word.definitionNative!.isEmpty);
+    // definition = null  → chưa thử enrich → cần enrich
+    // definition = ''   → đã thử, API không có entry → không enrich lại
+    // definition = text → đã có → không enrich lại
+    final needDefinition = word.definition == null;
+
+    if (!needDefinition && !needNative) return;
+
+    setState(() => _enriching = true);
+
+    // Step 1: Enrich definition gốc (FreeDictApi / Wiktionary) nếu chưa có
+    Word? updated = word;
+    if (needDefinition) {
+      updated = await ref
+              .read(vocabSyncProvider)
+              .enrichSingleWord(word.word, word.langCode) ??
+          word;
+    }
+
+    // Step 2: Fetch AI definition theo defLang nếu cần
+    if (needNative) {
+      final aiService = ref.read(aiServiceProvider);
+      if (aiService != null) {
+        final defLang = findLanguage(defLangCode);
+        final studyLang = findLanguage(word.langCode);
+        try {
+          final result = await aiService.complete(
+            messages: [
+              {
+                'role': 'user',
+                'content':
+                    'Give a concise meaning of the ${studyLang.name} word "${word.word}" in ${defLang.name}. '
+                    'Reply with ONLY the meaning, no extra explanation, no example.'
+              }
+            ],
+            systemPrompt:
+                'You are a bilingual dictionary. Reply only in ${defLang.name}.',
+          );
+          if (result != null && result.isNotEmpty) {
+            ref.read(aiSettingsProvider.notifier).reportAISuccess();
+            await ref
+                .read(wordDaoProvider)
+                .saveDefinitionNative(word.word, word.langCode, result);
+            updated = await ref
+                    .read(wordDaoProvider)
+                    .getWord(word.word, word.langCode) ??
+                updated;
+          }
+        } catch (e) {
+          ref.read(aiSettingsProvider.notifier).reportAIError(
+              e.toString().contains('timeout') ? 'Timeout' : 'Lỗi kết nối');
+        }
       }
     }
-    if (widget.word.word != oldWidget.word.word) {
-      _controller.reset();
+
+    if (mounted) {
+      setState(() {
+        _enrichedWord = updated;
+        _enriching = false;
+      });
+      widget.onEnriched?.call(updated ?? word);
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  // ── Helpers ────────────────────────────────────────────────
+
+  String _extractDisplayWord(String raw) {
+    if (!raw.contains('\n') && raw.length <= 40) return raw;
+    final lines = raw.split('\n');
+    for (final line in lines.reversed) {
+      final l = line.trim();
+      if (l.isNotEmpty && l.length <= 40 && !l.endsWith('.')) return l;
+    }
+    return lines.last.trim();
   }
+
+  // ── Build ───────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onFlip,
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (_, child) {
-          final angle = _animation.value * pi;
-          final isFront = angle < pi / 2;
+    final cs = appColors(context);
+    final word = _enrichedWord ?? widget.word;
+    final hasSecondary = widget.secondaryLanguage != null;
 
-          return Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
-              ..rotateY(angle),
-            child: isFront ? _buildFront() : _buildBack(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFront() {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              widget.word.word,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: primaryColor,
-              ),
-            ),
-            if (widget.word.phonetic != null &&
-                widget.word.phonetic!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                widget.word.phonetic!,
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-            ],
-            if (widget.word.romanization != null &&
-                widget.word.romanization!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                '[${widget.word.romanization}]',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              ),
-            ],
-            if (widget.word.partOfSpeech != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: enColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  widget.word.partOfSpeech!,
-                  style: const TextStyle(
-                      fontSize: 13, color: enColor, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (widget.word.audioUs != null &&
-                    widget.word.audioUs!.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.volume_up, color: enColor),
-                    onPressed: () => widget.ttsService.speak(
-                      widget.word.word,
-                      audioUrl: widget.word.audioUs,
-                      ttsLang: widget.ttsLang,
-                    ),
-                    tooltip: 'US',
-                  ),
-                if (widget.word.audioUk != null &&
-                    widget.word.audioUk!.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.volume_up, color: krColor),
-                    onPressed: () => widget.ttsService.speak(
-                      widget.word.word,
-                      audioUrl: widget.word.audioUk,
-                      ttsLang: widget.ttsLang,
-                    ),
-                    tooltip: 'UK',
-                  ),
-                if ((widget.word.audioUs == null ||
-                        widget.word.audioUs!.isEmpty) &&
-                    (widget.word.audioUk == null ||
-                        widget.word.audioUk!.isEmpty))
-                  IconButton(
-                    icon: const Icon(Icons.volume_up, color: enColor),
-                    onPressed: () => widget.ttsService.speak(
-                      widget.word.word,
-                      ttsLang: widget.ttsLang,
-                    ),
-                  ),
-              ],
-            ),
-            if (widget.word.definition != null &&
-                widget.word.definition!.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Text(
-                  widget.word.definition!,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text(
-              'Nhan de xem vi du',
-              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
-            ),
-          ],
+    return Column(
+      children: [
+        // ── Phần chính: chiếm hết không gian còn lại ─────────
+        Expanded(
+          child: _buildPrimarySection(word, cs),
         ),
-      ),
+
+        // ── Đường kẻ phân chia ────────────────────────────────
+        if (hasSecondary)
+          Container(height: 1, color: Colors.grey.shade200),
+
+        // ── Phần phụ: co lại vừa đủ content ──────────────────
+        if (hasSecondary)
+          _buildSecondarySection(word, cs),
+      ],
     );
   }
 
-  Widget _buildBack() {
-    return Transform(
-      alignment: Alignment.center,
-      transform: Matrix4.identity()..rotateY(pi),
-      child: Card(
-        margin: const EdgeInsets.all(16),
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  widget.word.word,
+  // ── Nửa trên ────────────────────────────────────────────────
+
+  Widget _buildPrimarySection(Word word, AppColorScheme cs) {
+    final definition = word.definition;
+    final primaryLang = ref.read(languageProvider).primary;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Cờ + từ + TTS — cùng 1 dòng
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(primaryLang.flag, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  word.word,
                   style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
                     color: primaryColor,
                   ),
                 ),
-                const SizedBox(height: 12),
-                if (widget.word.definition != null)
-                  Text(
-                    widget.word.definition!,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                    textAlign: TextAlign.center,
-                  ),
-                if (widget.word.example != null &&
-                    widget.word.example!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('📝 ', style: TextStyle(fontSize: 16)),
-                        Expanded(
-                          child: Text(
-                            widget.word.example!,
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey[700]),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.volume_up, size: 20),
-                          onPressed: () => widget.ttsService.speakSentence(
-                            widget.word.example!,
-                            ttsLang: widget.ttsLang,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (widget.aiLoading) ...[
-                  const SizedBox(height: 16),
-                  const CircularProgressIndicator(strokeWidth: 2),
-                  const SizedBox(height: 8),
-                  Text('AI dang suy nghi...',
-                      style: TextStyle(color: Colors.grey[500])),
-                ],
-                if (widget.aiExplanation != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: secondaryColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: secondaryColor.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.auto_awesome,
-                                size: 16, color: secondaryColor),
-                            SizedBox(width: 4),
-                            Text('AI giai thich',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: secondaryColor)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(widget.aiExplanation!,
-                            style: const TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                ],
+              ),
+              const SizedBox(width: 4),
+              _buildTtsRow(word, cs),
+            ],
+          ),
+          // Phonetic
+          if (word.phonetic?.isNotEmpty == true) ...[
+            const SizedBox(height: 3),
+            Text(word.phonetic!,
+                style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+          ] else if (word.romanization?.isNotEmpty == true) ...[
+            const SizedBox(height: 3),
+            Text('[${word.romanization}]',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+          ],
+
+          // Part of speech
+          if (word.partOfSpeech != null && word.partOfSpeech!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                word.partOfSpeech!,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: cs.primary,
+                    fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+
+          // Definition (English)
+          if (_enriching && definition == null) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 14, height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
+                ),
+                const SizedBox(width: 8),
+                Text('...', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
               ],
             ),
-          ),
-        ),
+          ] else if (definition != null && definition.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                definition,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+
+          // Ví dụ
+          if (word.example != null && word.example!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.primary.withValues(alpha: 0.12)),
+              ),
+              child: Text(
+                word.example!,
+                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+
+          // AI explanation
+          if (widget.aiLoading) ...[
+            const SizedBox(height: 12),
+            const CircularProgressIndicator(strokeWidth: 2),
+            const SizedBox(height: 6),
+            Text(tr(widget.guiLang, 'ai_thinking'),
+                style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          ],
+          if (widget.aiExplanation != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.secondary.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.secondary.withValues(alpha: 0.18)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Builder(builder: (_) {
+                    final provider = ref.read(aiSettingsProvider).provider;
+                    final pIcon = aiProviderIcon(provider);
+                    return Row(
+                      children: [
+                        Icon(pIcon, size: 14, color: cs.primary),
+                        const SizedBox(width: 4),
+                        Text(tr(widget.guiLang, 'ai_explanation'),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: cs.primary,
+                                fontSize: 12)),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 6),
+                  Text(widget.aiExplanation!,
+                      style: const TextStyle(fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTtsRow(Word word, AppColorScheme cs) {
+    final hasAudioUs = word.audioUs != null && word.audioUs!.isNotEmpty;
+
+    return IconButton(
+      icon: Icon(Icons.volume_up, size: 22, color: cs.primary),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      constraints: const BoxConstraints(),
+      onPressed: () => hasAudioUs
+          ? widget.ttsService.speakWithAudio(
+              word.word,
+              audioUrl: word.audioUs,
+              ttsLang: widget.ttsLang,
+            )
+          : widget.ttsService.speak(word.word, ttsLang: widget.ttsLang),
+    );
+  }
+
+  // ── Nửa dưới ────────────────────────────────────────────────
+
+  Widget _buildSecondarySection(Word primaryWord, AppColorScheme cs) {
+    final secLang = widget.secondaryLanguage!;
+    final secWord = widget.secondaryWord;
+    final isFetching = widget.isFetchingSecondary;
+    final isAIBusy = widget.isSecondaryAIBusy;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (isFetching && secWord == null) ...[
+            SizedBox(
+              width: 20, height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: cs.secondary),
+            ),
+          ] else if (isAIBusy && secWord == null) ...[
+            Text(
+              tr(widget.guiLang, 'ai_busy_secondary'),
+              style: TextStyle(fontSize: 13, color: Colors.grey[400]),
+              textAlign: TextAlign.center,
+            ),
+          ] else if (secWord != null) ...[
+            // Cờ + từ + TTS + icon AI — cùng 1 dòng
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(secLang.flag, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    _extractDisplayWord(secWord.word),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: cs.secondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(Icons.volume_up, size: 18, color: cs.secondary),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => widget.ttsService.speak(
+                    _extractDisplayWord(secWord.word),
+                    ttsLang: secLang.ttsLang,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.auto_awesome, size: 12, color: Colors.grey[400]),
+              ],
+            ),
+            // Phonetic
+            if (secWord.phonetic?.isNotEmpty == true) ...[
+              const SizedBox(height: 2),
+              Text(secWord.phonetic!,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+            ] else if (secWord.romanization?.isNotEmpty == true) ...[
+              const SizedBox(height: 2),
+              Text('[${secWord.romanization}]',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+            ],
+          ] else ...[
+            Text('—', style: TextStyle(fontSize: 22, color: Colors.grey[300])),
+          ],
+        ],
       ),
     );
   }

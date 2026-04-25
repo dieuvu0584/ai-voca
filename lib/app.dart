@@ -1,81 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'core/l10n/strings.dart';
+import 'core/providers.dart';
+import 'core/theme/app_theme.dart';
 import 'features/flashcard/flashcard_screen.dart';
-import 'features/quick_review/quick_review_screen.dart';
 import 'features/lookup/lookup_screen.dart';
 import 'features/ai_chat/ai_chat_screen.dart';
 import 'features/progress/progress_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/session_preview/session_preview_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'widgets/main_screen.dart';
 
-// Colors
-const primaryColor = Color(0xFF111111);
-const enColor = Color(0xFF1A6FB5);
-const krColor = Color(0xFFC0392B);
-const secondaryColor = Color(0xFF6C3FC7);
-const bgColor = Color(0xFFF4F4EF);
-const cardColor = Colors.white;
-const successGreen = Color(0xFF27AE60);
-const warningOrange = Color(0xFFE67E22);
-const errorRed = Color(0xFFE74C3C);
+// ── Màu cố định (không đổi theo theme) ───────────────────────
+const primaryColor  = Color(0xFF1F2937);  // text, heading — luôn dark
+const cardColor     = Colors.white;
+const successGreen  = Color(0xFF10B981);
+const warningOrange = Color(0xFFF59E0B);
+const errorRed      = Color(0xFFEF4444);
+
+// ── Màu cố định theo ngữ nghĩa (không đổi theo theme) ────────
+const krColor = Color(0xFFF59E0B);  // amber — UK audio badge
 
 final _router = GoRouter(
   routes: [
-    GoRoute(path: '/', builder: (_, __) => const MainScreen()),
+    GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
+    GoRoute(path: '/home', builder: (_, _) => const MainScreen()),
     GoRoute(
         path: '/preview',
-        builder: (_, state) => SessionPreviewScreen(
-              mode: state.uri.queryParameters['mode'] ?? 'flashcard',
-            )),
-    GoRoute(path: '/flashcard', builder: (_, __) => const FlashcardScreen()),
-    GoRoute(
-        path: '/quick-review', builder: (_, __) => const QuickReviewScreen()),
-    GoRoute(path: '/lookup', builder: (_, __) => const LookupScreen()),
-    GoRoute(path: '/ai-chat', builder: (_, __) => const AIChatScreen()),
-    GoRoute(path: '/progress', builder: (_, __) => const ProgressScreen()),
-    GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+        builder: (_, _) => const SessionPreviewScreen()),
+    GoRoute(path: '/flashcard', builder: (_, _) => const FlashcardScreen()),
+    GoRoute(path: '/lookup', builder: (_, _) => const LookupScreen()),
+    GoRoute(path: '/ai-chat', builder: (_, _) => const AIChatScreen()),
+    GoRoute(path: '/progress', builder: (_, _) => const ProgressScreen()),
+    GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
   ],
 );
 
-class VocabAIApp extends StatelessWidget {
+class VocabAIApp extends ConsumerWidget {
   const VocabAIApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang      = ref.watch(guiLangProvider);
+    final themeId   = ref.watch(appThemeProvider);
+    final preset = findAppTheme(themeId);
+    final cs = preset.colors;
+
     return MaterialApp.router(
-      title: 'Vocab AI',
+      title: tr(lang, 'app_title'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: enColor,
-        scaffoldBackgroundColor: bgColor,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: preset.seed,
+          primary: cs.primary,
+          secondary: cs.secondary,
+          surface: cs.background,
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: cs.background,
         cardColor: cardColor,
-        appBarTheme: const AppBarTheme(
+        extensions: [cs],
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: primaryColor,
           elevation: 0,
           centerTitle: true,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: cs.primary.withValues(alpha: 0.08),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: enColor,
+            backgroundColor: cs.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: cs.primary,
+            side: BorderSide(color: cs.primary.withValues(alpha: 0.5)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected) ? cs.primary : null),
+          trackColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected)
+                  ? cs.primary.withValues(alpha: 0.4)
+                  : null),
         ),
         textTheme: const TextTheme(
           headlineLarge: TextStyle(
               fontSize: 32, fontWeight: FontWeight.w800, color: primaryColor),
           headlineMedium: TextStyle(
               fontSize: 24, fontWeight: FontWeight.w700, color: primaryColor),
-          bodyLarge:
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-          bodyMedium:
-              TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+          bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
       ),
       routerConfig: _router,
