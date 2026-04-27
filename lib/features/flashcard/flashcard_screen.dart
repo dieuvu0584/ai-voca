@@ -130,7 +130,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     // Nếu DB trống (ngôn ngữ mới chưa từng sync) → trigger sync và chờ
     if (studyWords.isEmpty) {
       setState(() => _syncingVocab = true);
-      final isPremium = ref.read(premiumProvider);
+      final isPremium = ref.read(effectivePremiumProvider);
       await ref.read(vocabSyncProvider).syncIfNeeded(langCode, isPremium: isPremium);
       setState(() => _syncingVocab = false);
 
@@ -838,7 +838,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                 onPressed: () async {
                   await PaywallScreen.show(context, ref);
                   if (!mounted) return;
-                  final nowPremium = ref.read(premiumProvider);
+                  final nowPremium = ref.read(effectivePremiumProvider);
                   if (nowPremium) {
                     setState(() {
                       _hitFreeLimit = false;

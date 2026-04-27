@@ -11,7 +11,7 @@ class LangSlotBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final langState = ref.watch(languageProvider);
-    final isPremium = ref.watch(premiumProvider);
+    final isPremium = ref.watch(effectivePremiumProvider);
     final cs = appColors(context);
 
     return Padding(

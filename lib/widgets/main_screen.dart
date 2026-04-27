@@ -90,7 +90,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _triggerSync() {
     final langCode = ref.read(languageProvider).primary.code;
-    final isPremium = ref.read(premiumProvider);
+    final isPremium = ref.read(effectivePremiumProvider);
     // Chạy nền — khi sync xong thì reload stats để homepage cập nhật đúng số từ
     ref.read(vocabSyncProvider).syncIfNeeded(langCode, isPremium: isPremium).then((_) {
       if (mounted) _loadStats();

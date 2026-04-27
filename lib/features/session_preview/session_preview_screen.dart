@@ -61,7 +61,7 @@ class _SessionPreviewScreenState extends ConsumerState<SessionPreviewScreen> {
 
     // Nếu không có từ nào → thử fetch batch mới
     if (words.isEmpty && VocabSyncService.isSupported(langCode)) {
-      final isPremium = ref.read(premiumProvider);
+      final isPremium = ref.read(effectivePremiumProvider);
       await ref.read(vocabSyncProvider)
           .fetchNextBatchManual(langCode, isPremium: isPremium);
 
@@ -534,7 +534,7 @@ class _SessionPreviewScreenState extends ConsumerState<SessionPreviewScreen> {
                 onPressed: () async {
                   await PaywallScreen.show(context, ref);
                   if (!mounted) return;
-                  final nowPremium = ref.read(premiumProvider);
+                  final nowPremium = ref.read(effectivePremiumProvider);
                   if (nowPremium) {
                     setState(() {
                       _hitFreeLimit = false;

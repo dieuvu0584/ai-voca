@@ -62,7 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = ref.watch(guiLangProvider);
-    final isPremium = ref.watch(premiumProvider);
+    final isPremium = ref.watch(effectivePremiumProvider);
     final aiSettings = ref.watch(aiSettingsProvider);
 
     return Scaffold(
@@ -145,18 +145,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // ── Section 1: Premium Banner ──────────────────────────────
 
   Widget _buildPremiumBanner(String lang, bool isPremium) {
-    if (isPremium) {
+    // Đã mua Premium thật
+    if (ref.read(premiumProvider)) {
       return ListTile(
-        leading: const Icon(
-          Icons.workspace_premium_rounded,
-          color: Colors.amber,
-          size: 28,
-        ),
-        title: Text(
-          tr(lang, 'premium_active'),
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        leading: const Icon(Icons.workspace_premium_rounded,
+            color: Colors.amber, size: 28),
+        title: Text(tr(lang, 'premium_active'),
+            style: const TextStyle(fontWeight: FontWeight.w600)),
         tileColor: Colors.amber.withValues(alpha: 0.07),
+      );
+    }
+
+    // Đang trong promo 90 ngày
+    if (isPromoActive) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF10B981), Color(0xFF059669)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.celebration_rounded,
+                color: Colors.white, size: 32),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr(lang, 'promo_banner_title'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tr(lang, 'promo_banner_days')
+                        .replaceAll('{days}', '$promoDaysLeft'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     }
 
