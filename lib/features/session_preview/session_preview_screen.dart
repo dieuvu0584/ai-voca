@@ -163,10 +163,15 @@ class _SessionPreviewScreenState extends ConsumerState<SessionPreviewScreen> {
       remaining.removeAt(i);
     }
 
+    // Tập từ đã có trong danh sách còn lại
     final existingWords = remaining.map((w) => w.word).toSet();
+    // QUAN TRỌNG: loại cả từ đang bị skip — tránh re-add từ cũ làm replacement
+    final skippedWords = _skippedIndices.map((i) => _words[i].word).toSet();
+    existingWords.addAll(skippedWords);
+
     final replacements = <_PreviewWord>[];
 
-    // Pool candidates: filter bởi topic nếu đang chọn topic
+    // Pool candidates từ _allWords (lọc topic nếu đang chọn)
     final allFiltered = _applyTopicFilter(_allWords, _selectedTopic, 9999);
 
     for (final candidate in allFiltered) {
@@ -176,7 +181,21 @@ class _SessionPreviewScreenState extends ConsumerState<SessionPreviewScreen> {
       existingWords.add(candidate.word);
     }
 
-    // Nếu vẫn thiếu, lấy thêm từ due words (không filter topic vì due words quan trọng)
+    // Nếu vẫn thiếu → query DB lấy fresh new words chưa có trong _allWords
+    if (replacements.length < knownCount) {
+      final freshNew = await progressDao.getNewWords(langCode, limit: knownCount * 3);
+      for (final p in freshNew) {
+        if (replacements.length >= knownCount) break;
+        if (existingWords.contains(p.word)) continue;
+        final topics = langCode.startsWith('en')
+            ? (kWordToTopics[p.word.toLowerCase()] ?? <String>[])
+            : <String>[];
+        replacements.add(_PreviewWord(word: p.word, topics: topics));
+        existingWords.add(p.word);
+      }
+    }
+
+    // Nếu vẫn thiếu → lấy thêm từ due words
     if (replacements.length < knownCount) {
       final dueWords = await progressDao.getDueWords(langCode);
       for (final dw in dueWords) {
