@@ -1,4 +1,4 @@
-package com.vocabai.vocab_ai
+package com.vocabai.learnwords
 
 import android.content.Context
 import android.content.Intent

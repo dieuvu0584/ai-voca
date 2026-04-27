@@ -1,4 +1,4 @@
-package com.vocabai.vocab_ai
+package com.vocabai.learnwords
 
 import android.app.AlarmManager
 import android.app.PendingIntent

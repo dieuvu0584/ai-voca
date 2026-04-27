@@ -6,8 +6,8 @@
 -keep class com.android.vending.billing.** { *; }
 
 # Keep AlarmReceiver and ReminderScheduler
--keep class com.vocabai.vocab_ai.AlarmReceiver { *; }
--keep class com.vocabai.vocab_ai.ReminderScheduler { *; }
+-keep class com.vocabai.learnwords.AlarmReceiver { *; }
+-keep class com.vocabai.learnwords.ReminderScheduler { *; }
 
 # Play Core (deferred components)
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
