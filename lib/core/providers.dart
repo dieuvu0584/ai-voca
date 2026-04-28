@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ai/ai_service.dart';
 import 'auth/auth_service.dart';
 import 'backup/backup_service.dart';
 import 'db/database.dart';
+import 'import_vocab/import_service.dart';
 import 'tts/tts_service.dart';
 import 'dictionary/dict_service.dart';
 import 'notifications/notif_service.dart';
@@ -26,6 +28,15 @@ final authStateProvider = StreamProvider<User?>((ref) {
 // Backup
 final backupServiceProvider = Provider<BackupService>(
   (ref) => BackupService(ref.watch(databaseProvider)),
+);
+
+// Import
+final importServiceProvider = Provider<ImportService>(
+  (ref) => ImportService(
+    db: ref.watch(databaseProvider),
+    userAiService: ref.watch(aiServiceProvider),
+    firebaseReady: ref.watch(firebaseReadyProvider),
+  ),
 );
 
 // ── Database ─────────────────────────────────────────────────

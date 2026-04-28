@@ -148,6 +148,43 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceContextMeta = const VerificationMeta(
+    'sourceContext',
+  );
+  @override
+  late final GeneratedColumn<String> sourceContext = GeneratedColumn<String>(
+    'source_context',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isPhraseMeta = const VerificationMeta(
+    'isPhrase',
+  );
+  @override
+  late final GeneratedColumn<bool> isPhrase = GeneratedColumn<bool>(
+    'is_phrase',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_phrase" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     word,
@@ -163,6 +200,9 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
     romanization,
     source,
     cachedAt,
+    sourceType,
+    sourceContext,
+    isPhrase,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -270,6 +310,27 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
         cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta),
       );
     }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    }
+    if (data.containsKey('source_context')) {
+      context.handle(
+        _sourceContextMeta,
+        sourceContext.isAcceptableOrUnknown(
+          data['source_context']!,
+          _sourceContextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_phrase')) {
+      context.handle(
+        _isPhraseMeta,
+        isPhrase.isAcceptableOrUnknown(data['is_phrase']!, _isPhraseMeta),
+      );
+    }
     return context;
   }
 
@@ -331,6 +392,18 @@ class $WordsTable extends Words with TableInfo<$WordsTable, Word> {
         DriftSqlType.int,
         data['${effectivePrefix}cached_at'],
       ),
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      ),
+      sourceContext: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_context'],
+      ),
+      isPhrase: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_phrase'],
+      )!,
     );
   }
 
@@ -354,6 +427,9 @@ class Word extends DataClass implements Insertable<Word> {
   final String? romanization;
   final String source;
   final int? cachedAt;
+  final String? sourceType;
+  final String? sourceContext;
+  final bool isPhrase;
   const Word({
     required this.word,
     required this.langCode,
@@ -368,6 +444,9 @@ class Word extends DataClass implements Insertable<Word> {
     this.romanization,
     required this.source,
     this.cachedAt,
+    this.sourceType,
+    this.sourceContext,
+    required this.isPhrase,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -405,6 +484,13 @@ class Word extends DataClass implements Insertable<Word> {
     if (!nullToAbsent || cachedAt != null) {
       map['cached_at'] = Variable<int>(cachedAt);
     }
+    if (!nullToAbsent || sourceType != null) {
+      map['source_type'] = Variable<String>(sourceType);
+    }
+    if (!nullToAbsent || sourceContext != null) {
+      map['source_context'] = Variable<String>(sourceContext);
+    }
+    map['is_phrase'] = Variable<bool>(isPhrase);
     return map;
   }
 
@@ -443,6 +529,13 @@ class Word extends DataClass implements Insertable<Word> {
       cachedAt: cachedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(cachedAt),
+      sourceType: sourceType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceType),
+      sourceContext: sourceContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceContext),
+      isPhrase: Value(isPhrase),
     );
   }
 
@@ -465,6 +558,9 @@ class Word extends DataClass implements Insertable<Word> {
       romanization: serializer.fromJson<String?>(json['romanization']),
       source: serializer.fromJson<String>(json['source']),
       cachedAt: serializer.fromJson<int?>(json['cachedAt']),
+      sourceType: serializer.fromJson<String?>(json['sourceType']),
+      sourceContext: serializer.fromJson<String?>(json['sourceContext']),
+      isPhrase: serializer.fromJson<bool>(json['isPhrase']),
     );
   }
   @override
@@ -484,6 +580,9 @@ class Word extends DataClass implements Insertable<Word> {
       'romanization': serializer.toJson<String?>(romanization),
       'source': serializer.toJson<String>(source),
       'cachedAt': serializer.toJson<int?>(cachedAt),
+      'sourceType': serializer.toJson<String?>(sourceType),
+      'sourceContext': serializer.toJson<String?>(sourceContext),
+      'isPhrase': serializer.toJson<bool>(isPhrase),
     };
   }
 
@@ -501,6 +600,9 @@ class Word extends DataClass implements Insertable<Word> {
     Value<String?> romanization = const Value.absent(),
     String? source,
     Value<int?> cachedAt = const Value.absent(),
+    Value<String?> sourceType = const Value.absent(),
+    Value<String?> sourceContext = const Value.absent(),
+    bool? isPhrase,
   }) => Word(
     word: word ?? this.word,
     langCode: langCode ?? this.langCode,
@@ -517,6 +619,11 @@ class Word extends DataClass implements Insertable<Word> {
     romanization: romanization.present ? romanization.value : this.romanization,
     source: source ?? this.source,
     cachedAt: cachedAt.present ? cachedAt.value : this.cachedAt,
+    sourceType: sourceType.present ? sourceType.value : this.sourceType,
+    sourceContext: sourceContext.present
+        ? sourceContext.value
+        : this.sourceContext,
+    isPhrase: isPhrase ?? this.isPhrase,
   );
   Word copyWithCompanion(WordsCompanion data) {
     return Word(
@@ -543,6 +650,13 @@ class Word extends DataClass implements Insertable<Word> {
           : this.romanization,
       source: data.source.present ? data.source.value : this.source,
       cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceContext: data.sourceContext.present
+          ? data.sourceContext.value
+          : this.sourceContext,
+      isPhrase: data.isPhrase.present ? data.isPhrase.value : this.isPhrase,
     );
   }
 
@@ -561,7 +675,10 @@ class Word extends DataClass implements Insertable<Word> {
           ..write('example: $example, ')
           ..write('romanization: $romanization, ')
           ..write('source: $source, ')
-          ..write('cachedAt: $cachedAt')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceContext: $sourceContext, ')
+          ..write('isPhrase: $isPhrase')
           ..write(')'))
         .toString();
   }
@@ -581,6 +698,9 @@ class Word extends DataClass implements Insertable<Word> {
     romanization,
     source,
     cachedAt,
+    sourceType,
+    sourceContext,
+    isPhrase,
   );
   @override
   bool operator ==(Object other) =>
@@ -598,7 +718,10 @@ class Word extends DataClass implements Insertable<Word> {
           other.example == this.example &&
           other.romanization == this.romanization &&
           other.source == this.source &&
-          other.cachedAt == this.cachedAt);
+          other.cachedAt == this.cachedAt &&
+          other.sourceType == this.sourceType &&
+          other.sourceContext == this.sourceContext &&
+          other.isPhrase == this.isPhrase);
 }
 
 class WordsCompanion extends UpdateCompanion<Word> {
@@ -615,6 +738,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
   final Value<String?> romanization;
   final Value<String> source;
   final Value<int?> cachedAt;
+  final Value<String?> sourceType;
+  final Value<String?> sourceContext;
+  final Value<bool> isPhrase;
   final Value<int> rowid;
   const WordsCompanion({
     this.word = const Value.absent(),
@@ -630,6 +756,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
     this.romanization = const Value.absent(),
     this.source = const Value.absent(),
     this.cachedAt = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceContext = const Value.absent(),
+    this.isPhrase = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WordsCompanion.insert({
@@ -646,6 +775,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
     this.romanization = const Value.absent(),
     this.source = const Value.absent(),
     this.cachedAt = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceContext = const Value.absent(),
+    this.isPhrase = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : word = Value(word),
        langCode = Value(langCode);
@@ -663,6 +795,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
     Expression<String>? romanization,
     Expression<String>? source,
     Expression<int>? cachedAt,
+    Expression<String>? sourceType,
+    Expression<String>? sourceContext,
+    Expression<bool>? isPhrase,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -679,6 +814,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
       if (romanization != null) 'romanization': romanization,
       if (source != null) 'source': source,
       if (cachedAt != null) 'cached_at': cachedAt,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceContext != null) 'source_context': sourceContext,
+      if (isPhrase != null) 'is_phrase': isPhrase,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -697,6 +835,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
     Value<String?>? romanization,
     Value<String>? source,
     Value<int?>? cachedAt,
+    Value<String?>? sourceType,
+    Value<String?>? sourceContext,
+    Value<bool>? isPhrase,
     Value<int>? rowid,
   }) {
     return WordsCompanion(
@@ -713,6 +854,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
       romanization: romanization ?? this.romanization,
       source: source ?? this.source,
       cachedAt: cachedAt ?? this.cachedAt,
+      sourceType: sourceType ?? this.sourceType,
+      sourceContext: sourceContext ?? this.sourceContext,
+      isPhrase: isPhrase ?? this.isPhrase,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -759,6 +903,15 @@ class WordsCompanion extends UpdateCompanion<Word> {
     if (cachedAt.present) {
       map['cached_at'] = Variable<int>(cachedAt.value);
     }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceContext.present) {
+      map['source_context'] = Variable<String>(sourceContext.value);
+    }
+    if (isPhrase.present) {
+      map['is_phrase'] = Variable<bool>(isPhrase.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -781,6 +934,9 @@ class WordsCompanion extends UpdateCompanion<Word> {
           ..write('romanization: $romanization, ')
           ..write('source: $source, ')
           ..write('cachedAt: $cachedAt, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceContext: $sourceContext, ')
+          ..write('isPhrase: $isPhrase, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1792,6 +1948,9 @@ typedef $$WordsTableCreateCompanionBuilder =
       Value<String?> romanization,
       Value<String> source,
       Value<int?> cachedAt,
+      Value<String?> sourceType,
+      Value<String?> sourceContext,
+      Value<bool> isPhrase,
       Value<int> rowid,
     });
 typedef $$WordsTableUpdateCompanionBuilder =
@@ -1809,6 +1968,9 @@ typedef $$WordsTableUpdateCompanionBuilder =
       Value<String?> romanization,
       Value<String> source,
       Value<int?> cachedAt,
+      Value<String?> sourceType,
+      Value<String?> sourceContext,
+      Value<bool> isPhrase,
       Value<int> rowid,
     });
 
@@ -1882,6 +2044,21 @@ class $$WordsTableFilterComposer extends Composer<_$AppDatabase, $WordsTable> {
 
   ColumnFilters<int> get cachedAt => $composableBuilder(
     column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceContext => $composableBuilder(
+    column: $table.sourceContext,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPhrase => $composableBuilder(
+    column: $table.isPhrase,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1959,6 +2136,21 @@ class $$WordsTableOrderingComposer
     column: $table.cachedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceContext => $composableBuilder(
+    column: $table.sourceContext,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPhrase => $composableBuilder(
+    column: $table.isPhrase,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$WordsTableAnnotationComposer
@@ -2018,6 +2210,19 @@ class $$WordsTableAnnotationComposer
 
   GeneratedColumn<int> get cachedAt =>
       $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceContext => $composableBuilder(
+    column: $table.sourceContext,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPhrase =>
+      $composableBuilder(column: $table.isPhrase, builder: (column) => column);
 }
 
 class $$WordsTableTableManager
@@ -2061,6 +2266,9 @@ class $$WordsTableTableManager
                 Value<String?> romanization = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<int?> cachedAt = const Value.absent(),
+                Value<String?> sourceType = const Value.absent(),
+                Value<String?> sourceContext = const Value.absent(),
+                Value<bool> isPhrase = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WordsCompanion(
                 word: word,
@@ -2076,6 +2284,9 @@ class $$WordsTableTableManager
                 romanization: romanization,
                 source: source,
                 cachedAt: cachedAt,
+                sourceType: sourceType,
+                sourceContext: sourceContext,
+                isPhrase: isPhrase,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2093,6 +2304,9 @@ class $$WordsTableTableManager
                 Value<String?> romanization = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<int?> cachedAt = const Value.absent(),
+                Value<String?> sourceType = const Value.absent(),
+                Value<String?> sourceContext = const Value.absent(),
+                Value<bool> isPhrase = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WordsCompanion.insert(
                 word: word,
@@ -2108,6 +2322,9 @@ class $$WordsTableTableManager
                 romanization: romanization,
                 source: source,
                 cachedAt: cachedAt,
+                sourceType: sourceType,
+                sourceContext: sourceContext,
+                isPhrase: isPhrase,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

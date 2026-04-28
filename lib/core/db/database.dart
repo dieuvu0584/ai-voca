@@ -20,13 +20,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(words, words.definitionNative);
+      }
+      if (from < 3) {
+        // Import metadata columns (Sprint 2)
+        await m.addColumn(words, words.sourceType);
+        await m.addColumn(words, words.sourceContext);
+        await m.addColumn(words, words.isPhrase);
       }
     },
   );

@@ -56,8 +56,12 @@ dependencies:
   # File operations — export/import backup JSON
   file_picker: ^8.1.2
   share_plus: ^10.0.0
-  # HTTP — URL import (Phase 2)
+  # HTTP — URL import
   http: ^1.2.2
+  # Image picker — import from camera/gallery (Phase 2)
+  image_picker: ^1.1.2
+  # Speech to text — voice import (Phase 2)
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:

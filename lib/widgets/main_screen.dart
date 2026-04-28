@@ -227,6 +227,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildFlashcardCTA(lang),
+                      _buildImportCTA(lang),
                       _buildHeader(lang, langState),
                       _buildPeriodSelector(lang),
                       _buildBarChart(lang),
@@ -303,6 +304,72 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 color: _dueCount > 0 ? cs.primary : Colors.grey[300],
                 size: 38,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── import CTA ────────────────────────────────────────
+
+  Widget _buildImportCTA(String lang) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: GestureDetector(
+        onTap: () => context.push('/import'),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.upload_file_rounded,
+                    color: Color(0xFF3B82F6), size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr(lang, 'import_vocab'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: primaryColor,
+                      ),
+                    ),
+                    Text(
+                      tr(lang, 'import_vocab_subtitle'),
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  color: Color(0xFF3B82F6), size: 20),
             ],
           ),
         ),

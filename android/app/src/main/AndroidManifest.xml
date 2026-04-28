@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Internet (Firebase, API calls) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Camera — import từ ảnh -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Microphone — import từ giọng nói -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Read storage — chọn ảnh từ thư viện -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- In-App Purchase (Google Play Billing) -->
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>

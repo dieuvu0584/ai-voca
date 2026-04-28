@@ -301,6 +301,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                 source: 'linked',
                 phonetic: secPhonetic,
                 definitionNative: meaning,
+                isPhrase: false,
               );
               // Lưu DB và enrich ở background — không await
               wordDao.insertWord(WordsCompanion(

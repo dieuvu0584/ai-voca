@@ -17,6 +17,11 @@ class Words extends Table {
   TextColumn get source =>
       text().withDefault(const Constant('local'))(); // 'api'|'cache'|'local'
   IntColumn get cachedAt => integer().nullable()();
+  // Import metadata (Sprint 2)
+  TextColumn get sourceType => text().nullable()(); // 'manual'|'text'|'url'|'image'|'voice'
+  TextColumn get sourceContext => text().nullable()(); // URL hoặc text snippet gốc
+  BoolColumn get isPhrase =>
+      boolean().withDefault(const Constant(false))(); // true nếu là cụm từ
 
   @override
   Set<Column> get primaryKey => {word, langCode};
