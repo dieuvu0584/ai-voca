@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "908869411323",
+    "project_id": "vocab-ai-2ff78",
+    "storage_bucket": "vocab-ai-2ff78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:908869411323:android:f28c7a002ae850fea52b5e",
+        "android_client_info": {
+          "package_name": "com.vocabai.learnwords"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "908869411323-gnp7csoi30bnh264bt6kr79f14a2pltv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU0KHtdfYhncKjga1VcOGOJKM6Tp-95S4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "908869411323-gnp7csoi30bnh264bt6kr79f14a2pltv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
