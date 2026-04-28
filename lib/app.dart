@@ -9,6 +9,7 @@ import 'features/lookup/lookup_screen.dart';
 import 'features/ai_chat/ai_chat_screen.dart';
 import 'features/progress/progress_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/backup/backup_screen.dart';
 import 'features/session_preview/session_preview_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'widgets/main_screen.dart';
@@ -35,6 +36,7 @@ final _router = GoRouter(
     GoRoute(path: '/ai-chat', builder: (_, _) => const AIChatScreen()),
     GoRoute(path: '/progress', builder: (_, _) => const ProgressScreen()),
     GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+    GoRoute(path: '/backup', builder: (_, _) => const BackupScreen()),
   ],
 );
 

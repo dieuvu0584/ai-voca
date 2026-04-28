@@ -1,11 +1,34 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth/auth_service.dart';
+import 'backup/backup_service.dart';
 import 'db/database.dart';
 import 'tts/tts_service.dart';
 import 'dictionary/dict_service.dart';
 import 'notifications/notif_service.dart';
 import 'vocab_sync/vocab_sync_service.dart';
 import '../data/languages.dart';
+
+// ── Firebase ─────────────────────────────────────────────────
+
+/// true nếu Firebase.initializeApp() thành công
+final firebaseReadyProvider = StateProvider<bool>((ref) => false);
+
+// Auth
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  if (!ref.watch(firebaseReadyProvider)) return Stream.value(null);
+  return ref.watch(authServiceProvider).authStateChanges;
+});
+
+// Backup
+final backupServiceProvider = Provider<BackupService>(
+  (ref) => BackupService(ref.watch(databaseProvider)),
+);
+
+// ── Database ─────────────────────────────────────────────────
 
 // Database
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());

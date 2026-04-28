@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app.dart';
 import '../../core/ai/ai_service.dart';
@@ -131,7 +132,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const Divider(height: 1),
 
-            // 9. About
+            // 9. Backup & Sync
+            _buildSectionHeader(context, tr(lang, 'backup_sync')),
+            _buildBackupSection(lang),
+
+            const Divider(height: 1),
+
+            // 10. About
             _buildSectionHeader(context, tr(lang, 'about')),
             _buildAboutSection(lang),
 
@@ -678,7 +685,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // ── Section 9: About ──────────────────────────────────────
+  // ── Section 9: Backup & Sync ──────────────────────────────
+
+  Widget _buildBackupSection(String lang) {
+    final authState = ref.watch(authStateProvider);
+    final subtitle = authState.maybeWhen(
+      data: (user) => user != null ? user.email ?? user.displayName ?? '' : tr(lang, 'sign_in_desc'),
+      orElse: () => tr(lang, 'sign_in_desc'),
+    );
+
+    return ListTile(
+      leading: const Icon(Icons.cloud_sync_outlined),
+      title: Text(tr(lang, 'backup_sync')),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.push('/backup'),
+    );
+  }
+
+  // ── Section 10: About ─────────────────────────────────────
 
   Widget _buildAboutSection(String lang) {
     return Column(

@@ -46,6 +46,18 @@ dependencies:
   # Giữ màn hình sáng khi autoplay
   wakelock_plus: ^1.2.8
   flutter_timezone: ^5.0.2
+  # Firebase — Backup & Sync + AI Proxy
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  cloud_functions: ^5.6.2
+  # Google Sign-In
+  google_sign_in: ^6.2.1
+  # File operations — export/import backup JSON
+  file_picker: ^8.1.2
+  share_plus: ^10.0.0
+  # HTTP — URL import (Phase 2)
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
