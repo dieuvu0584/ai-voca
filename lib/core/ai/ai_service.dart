@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'ai_settings.dart';
 import 'providers/claude_provider.dart';
 import 'providers/openai_provider.dart';
@@ -21,7 +20,7 @@ abstract class AIService {
   Future<bool> testConnection();
 }
 
-/// Factory tạo AIService dựa trên provider
+/// Factory tạo AIService dựa trên provider (dùng key của user)
 AIService? createAIService({
   required AIProvider provider,
   required String apiKey,
@@ -42,15 +41,3 @@ AIService? createAIService({
       return OpenRouterProvider(apiKey: apiKey, model: model);
   }
 }
-
-/// Provider cho AIService hiện tại
-final aiServiceProvider = Provider<AIService?>((ref) {
-  final settings = ref.watch(aiSettingsProvider);
-  if (settings.mode == AIMode.none) return null;
-  if (settings.apiKey == null || settings.apiKey!.isEmpty) return null;
-  return createAIService(
-    provider: settings.provider,
-    apiKey: settings.apiKey!,
-    model: settings.model,
-  );
-});

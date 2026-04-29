@@ -45,23 +45,19 @@ class AISettingsNotifier extends StateNotifier<AISettings> {
   int _consecutiveErrors = 0;
   static const int _kAutoDisableThreshold = 3;
 
-  AISettingsNotifier(this._secureStorage) : super(const AISettings());
+  AISettingsNotifier(this._secureStorage)
+      : super(const AISettings(mode: AIMode.appDefault));
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final modeIndex = prefs.getInt('ai_mode') ?? AIMode.none.index;
+    // Mặc định: appDefault (dùng AI của app qua Firebase)
+    final modeIndex = prefs.getInt('ai_mode') ?? AIMode.appDefault.index;
     final providerIndex = prefs.getInt('ai_provider') ?? 0;
     final model = prefs.getString('ai_model');
 
     final provider = AIProvider.values[providerIndex.clamp(0, AIProvider.values.length - 1)];
     final apiKey = await _secureStorage.read(key: 'ai_api_key_${provider.name}');
-
-    // Migration: appDefault đã bị bỏ, chuyển sang none
-    var mode = AIMode.values[modeIndex.clamp(0, AIMode.values.length - 1)];
-    if (mode == AIMode.appDefault) {
-      mode = AIMode.none;
-      await prefs.setInt('ai_mode', AIMode.none.index);
-    }
+    final mode = AIMode.values[modeIndex.clamp(0, AIMode.values.length - 1)];
 
     state = AISettings(
       mode: mode,

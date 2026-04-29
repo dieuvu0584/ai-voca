@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai/ai_service.dart';
+import 'ai/ai_settings.dart';
+import 'ai/providers/firebase_function_provider.dart';
 import 'auth/auth_service.dart';
 import 'backup/backup_service.dart';
 import 'db/database.dart';
@@ -16,6 +18,37 @@ import '../data/languages.dart';
 
 /// true nếu Firebase.initializeApp() thành công
 final firebaseReadyProvider = StateProvider<bool>((ref) => false);
+
+// ── AI Service ───────────────────────────────────────────────
+
+/// Provider AI hiện tại:
+///   - appDefault → Firebase Functions (app's Claude key, cần đăng nhập)
+///   - userKey    → Key riêng của user
+///   - none       → AI tắt
+final aiServiceProvider = Provider<AIService?>((ref) {
+  final settings = ref.watch(aiSettingsProvider);
+  final firebaseReady = ref.watch(firebaseReadyProvider);
+
+  switch (settings.mode) {
+    case AIMode.none:
+      return null;
+
+    case AIMode.appDefault:
+      // Dùng Firebase Functions (key của app trong Secret Manager)
+      // Không yêu cầu user đăng nhập — callable function tự xử lý auth optional
+      if (firebaseReady) return FirebaseFunctionProvider();
+      return null;
+
+    case AIMode.userKey:
+      final key = settings.apiKey;
+      if (key == null || key.isEmpty) return null;
+      return createAIService(
+        provider: settings.provider,
+        apiKey: key,
+        model: settings.model,
+      );
+  }
+});
 
 // Auth
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
