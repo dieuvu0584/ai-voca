@@ -24,7 +24,7 @@ const claudeApiKey = defineSecret('CLAUDE_API_KEY');
 
 const FREE_DAILY_LIMIT = 10;
 const PREMIUM_DAILY_LIMIT = 50;
-const DEFAULT_MODEL = 'claude-3-5-haiku-20241022';
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
 // App secret — Flutter gửi header này để xác thực request
 // Không cần Firebase Auth, không phụ thuộc GMS
