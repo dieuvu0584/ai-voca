@@ -1,28 +1,16 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../ai_service.dart';
 
-/// AIService dùng Firebase Functions — gọi Claude bằng app key trong Secret Manager.
-/// Không cần user tự nhập API key.
-/// Tự động sign in ẩn danh nếu chưa đăng nhập để vẫn có UID cho rate limiting.
+/// AIService dùng Firebase HTTPS Function — gọi Claude bằng app key trong Secret Manager.
+/// Dùng HTTP trực tiếp thay vì callable SDK để tránh phụ thuộc Firebase Auth / GMS.
 class FirebaseFunctionProvider implements AIService {
-  static const _region = 'asia-southeast1';
-
-  /// Đảm bảo có auth (Google hoặc anonymous) trước khi gọi function
-  Future<bool> _ensureAuth() async {
-    try {
-      final auth = FirebaseAuth.instance;
-      if (auth.currentUser != null) return true;
-      // Tự sign in ẩn danh
-      await auth.signInAnonymously();
-      return auth.currentUser != null;
-    } catch (e) {
-      debugPrint('[FirebaseFunctionProvider] signInAnonymously error: $e');
-      return false;
-    }
-  }
+  static const _functionUrl =
+      'https://asia-southeast1-vocab-ai-2ff78.cloudfunctions.net/callClaude';
+  static const _appSecret = 'vocabai-proxy-2024';
 
   @override
   Future<String?> complete({
@@ -31,22 +19,35 @@ class FirebaseFunctionProvider implements AIService {
     int maxTokens = 1000,
   }) async {
     try {
-      final authed = await _ensureAuth();
-      if (!authed) {
-        debugPrint('[FirebaseFunctionProvider] Không có auth, bỏ qua');
+      // Lấy UID nếu đang đăng nhập (để rate limit chính xác hơn)
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      final response = await http.post(
+        Uri.parse(_functionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-secret': _appSecret,
+          if (uid != null) 'x-user-id': uid,
+        },
+        body: jsonEncode({
+          'systemPrompt': systemPrompt,
+          'messages': messages,
+          'maxTokens': maxTokens,
+          'isPremium': false,
+        }),
+      ).timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return json['text'] as String?;
+      } else if (response.statusCode == 429) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('[FirebaseFunctionProvider] Rate limit: ${json['error']}');
+        return null;
+      } else {
+        debugPrint('[FirebaseFunctionProvider] HTTP ${response.statusCode}: ${response.body}');
         return null;
       }
-
-      final callable = FirebaseFunctions.instanceFor(region: _region)
-          .httpsCallable('callClaude');
-
-      final result = await callable.call({
-        'systemPrompt': systemPrompt,
-        'messages': messages,
-        'maxTokens': maxTokens,
-        'isPremium': false,
-      });
-      return result.data['text'] as String?;
     } catch (e) {
       debugPrint('[FirebaseFunctionProvider] error: $e');
       return null;
@@ -59,7 +60,7 @@ class FirebaseFunctionProvider implements AIService {
       messages: [
         {'role': 'user', 'content': 'Reply "ok" only.'}
       ],
-      systemPrompt: 'You are a test assistant. Reply with just "ok".',
+      systemPrompt: 'Reply with just "ok".',
       maxTokens: 10,
     );
     return result != null && result.isNotEmpty;

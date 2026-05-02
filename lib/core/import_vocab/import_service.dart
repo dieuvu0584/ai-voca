@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -131,36 +130,51 @@ class ImportService {
               ? 'image/gif'
               : 'image/jpeg';
 
+      const functionUrl =
+          'https://asia-southeast1-vocab-ai-2ff78.cloudfunctions.net/callClaude';
+      const appSecret = 'vocabai-proxy-2024';
+
       final systemPrompt = _buildSystemPrompt(langCode, defLang);
       final userPrompt =
           'Extract vocabulary from this image. Return JSON array only.';
+      final uid = FirebaseAuth.instance.currentUser?.uid;
 
-      final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast1')
-          .httpsCallable('callClaude');
-
-      final result = await callable.call({
-        'systemPrompt': systemPrompt,
-        'messages': [
-          {
-            'role': 'user',
-            'content': [
-              {
-                'type': 'image',
-                'source': {
-                  'type': 'base64',
-                  'media_type': mimeType,
-                  'data': base64Image,
+      final response = await http.post(
+        Uri.parse(functionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-secret': appSecret,
+          if (uid != null) 'x-user-id': uid,
+        },
+        body: jsonEncode({
+          'systemPrompt': systemPrompt,
+          'messages': [
+            {
+              'role': 'user',
+              'content': [
+                {
+                  'type': 'image',
+                  'source': {
+                    'type': 'base64',
+                    'media_type': mimeType,
+                    'data': base64Image,
+                  },
                 },
-              },
-              {'type': 'text', 'text': userPrompt},
-            ],
-          }
-        ],
-        'maxTokens': 1024,
-        'isPremium': false,
-      });
+                {'type': 'text', 'text': userPrompt},
+              ],
+            }
+          ],
+          'maxTokens': 1024,
+          'isPremium': false,
+        }),
+      ).timeout(const Duration(seconds: 60));
 
-      final text = result.data['text'] as String;
+      if (response.statusCode != 200) {
+        return ImportParseResult.error(
+            ImportSource.image, 'HTTP ${response.statusCode}');
+      }
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final text = json['text'] as String;
       final words = _parseJsonResponse(text);
 
       return ImportParseResult(
@@ -289,17 +303,35 @@ class ImportService {
   Future<String?> _callViaFirebase(
       String systemPrompt, String userPrompt) async {
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'asia-southeast1')
-          .httpsCallable('callClaude');
-      final result = await callable.call({
-        'systemPrompt': systemPrompt,
-        'messages': [
-          {'role': 'user', 'content': userPrompt}
-        ],
-        'maxTokens': 1024,
-        'isPremium': false,
-      });
-      return result.data['text'] as String?;
+      const functionUrl =
+          'https://asia-southeast1-vocab-ai-2ff78.cloudfunctions.net/callClaude';
+      const appSecret = 'vocabai-proxy-2024';
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      final response = await http.post(
+        Uri.parse(functionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-secret': appSecret,
+          if (uid != null) 'x-user-id': uid,
+        },
+        body: jsonEncode({
+          'systemPrompt': systemPrompt,
+          'messages': [
+            {'role': 'user', 'content': userPrompt}
+          ],
+          'maxTokens': 1024,
+          'isPremium': false,
+        }),
+      ).timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return json['text'] as String?;
+      }
+      debugPrint('[ImportService] Firebase HTTP ${response.statusCode}: ${response.body}');
+      return null;
     } catch (e) {
       debugPrint('[ImportService] Firebase call error: $e');
       return null;
