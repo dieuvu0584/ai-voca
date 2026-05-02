@@ -407,21 +407,71 @@ class _AISettingsDetailScreenState
 
               const SizedBox(height: 12),
 
-              // ── Section 3: Tắt AI ─────────────────────────────
-              if (settings.mode != AIMode.none)
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await ref
-                          .read(aiSettingsProvider.notifier)
-                          .setMode(AIMode.none);
-                    },
-                    icon: const Icon(Icons.power_off_outlined,
-                        color: Colors.grey),
-                    label: const Text('Tắt AI',
-                        style: TextStyle(color: Colors.grey)),
-                  ),
+              // ── Section 3: Nâng cao ───────────────────────────
+              const SizedBox(height: 8),
+              Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
                 ),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                  title: const Text(
+                    'Nâng cao',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  iconColor: Colors.grey,
+                  collapsedIconColor: Colors.grey,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.power_off_outlined,
+                              size: 18, color: Colors.grey),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Tắt tính năng AI',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Import, Flashcard AI và AI Chat sẽ bị ẩn',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: settings.mode == AIMode.none,
+                            onChanged: (val) async {
+                              await ref
+                                  .read(aiSettingsProvider.notifier)
+                                  .setMode(val ? AIMode.none : AIMode.appDefault);
+                            },
+                            activeColor: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
