@@ -57,7 +57,14 @@ class AISettingsNotifier extends StateNotifier<AISettings> {
 
     final provider = AIProvider.values[providerIndex.clamp(0, AIProvider.values.length - 1)];
     final apiKey = await _secureStorage.read(key: 'ai_api_key_${provider.name}');
-    final mode = AIMode.values[modeIndex.clamp(0, AIMode.values.length - 1)];
+    var mode = AIMode.values[modeIndex.clamp(0, AIMode.values.length - 1)];
+
+    // Migration: nếu mode = none mà chưa có API key riêng → reset về appDefault
+    // (xảy ra khi code cũ đã lưu none vào prefs trước khi có Firebase proxy)
+    if (mode == AIMode.none && (apiKey == null || apiKey.isEmpty)) {
+      mode = AIMode.appDefault;
+      await prefs.setInt('ai_mode', AIMode.appDefault.index);
+    }
 
     state = AISettings(
       mode: mode,
