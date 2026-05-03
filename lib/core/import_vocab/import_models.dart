@@ -58,7 +58,7 @@ extension ImportSourceExt on ImportSource {
       case ImportSource.image:
         return 'Ảnh';
       case ImportSource.voice:
-        return 'Giọng nói';
+        return 'Audio';
     }
   }
 }

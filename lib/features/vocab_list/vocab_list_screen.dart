@@ -13,7 +13,7 @@ const _kSources = [
   (key: 'text',   label: 'Text',     icon: Icons.text_fields_rounded),
   (key: 'url',    label: 'URL',      icon: Icons.link_rounded),
   (key: 'image',  label: 'Ảnh',      icon: Icons.image_rounded),
-  (key: 'voice',  label: 'Voice',    icon: Icons.mic_rounded),
+  (key: 'voice',  label: 'Audio',    icon: Icons.mic_rounded),
   (key: 'manual', label: 'Thủ công', icon: Icons.edit_rounded),
 ];
 
@@ -40,7 +40,7 @@ String _sourceLabel(String? s) => switch (s) {
   'text'  => 'Text',
   'url'   => 'URL',
   'image' => 'Ảnh',
-  'voice' => 'Voice',
+  'voice' => 'Audio',
   _       => 'Thủ công',
 };
 
@@ -261,7 +261,7 @@ class _VocabListScreenState extends ConsumerState<VocabListScreen> {
           if (_searchQuery.isEmpty && _selectedSource == 'all') ...[
             const SizedBox(height: 8),
             Text(
-              'Import từ Text, URL, Ảnh hoặc Voice',
+              'Import từ Text, URL, Ảnh hoặc Audio',
               style:
                   TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
