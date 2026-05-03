@@ -228,6 +228,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     children: [
                       _buildFlashcardCTA(lang),
                       _buildImportCTA(lang),
+                      _buildVocabListCTA(lang),
                       _buildHeader(lang, langState),
                       _buildPeriodSelector(lang),
                       _buildBarChart(lang),
@@ -304,6 +305,70 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 color: _dueCount > 0 ? cs.primary : Colors.grey[300],
                 size: 38,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── vocab list CTA ────────────────────────────────────
+
+  Widget _buildVocabListCTA(String lang) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: GestureDetector(
+        onTap: () => context.push('/vocab-list'),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.library_books_rounded,
+                    color: Color(0xFF10B981), size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Từ vựng của tôi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: primaryColor,
+                      ),
+                    ),
+                    Text(
+                      'Xem, tìm kiếm và lọc theo nguồn',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  color: Color(0xFF10B981), size: 20),
             ],
           ),
         ),

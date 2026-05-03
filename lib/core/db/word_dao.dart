@@ -143,6 +143,50 @@ class WordDao extends DatabaseAccessor<AppDatabase> with _$WordDaoMixin {
             ..limit(1))
           .getSingleOrNull();
 
+  /// Lấy từ theo sourceType, có thể filter + search + sort
+  Future<List<Word>> getWordsBySource({
+    required String langCode,
+    String? sourceType,   // null = tất cả
+    String? searchQuery,
+    int limit = 200,
+  }) {
+    final query = select(words)
+      ..where((t) {
+        var expr = t.langCode.equals(langCode);
+        if (sourceType != null) {
+          expr = expr & t.sourceType.equals(sourceType);
+        }
+        if (searchQuery != null && searchQuery.isNotEmpty) {
+          expr = expr & (t.word.like('%$searchQuery%') |
+              t.definition.like('%$searchQuery%'));
+        }
+        return expr;
+      })
+      ..orderBy([(t) => OrderingTerm.desc(t.cachedAt)])
+      ..limit(limit);
+    return query.get();
+  }
+
+  /// Đếm từ theo từng sourceType
+  Future<Map<String, int>> countBySourceType(String langCode) async {
+    final all = await (select(words)
+          ..where((t) => t.langCode.equals(langCode))
+          ..orderBy([(t) => OrderingTerm.asc(t.sourceType)]))
+        .get();
+    final map = <String, int>{'all': all.length};
+    for (final w in all) {
+      final key = w.sourceType ?? 'manual';
+      map[key] = (map[key] ?? 0) + 1;
+    }
+    return map;
+  }
+
+  /// Xóa một từ
+  Future<int> deleteWord(String word, String langCode) =>
+      (delete(words)
+            ..where((t) => t.word.equals(word) & t.langCode.equals(langCode)))
+          .go();
+
   /// Tìm từ theo source='linked' và definition (linked từ ngôn ngữ chính)
   Future<Word?> findLinkedWord(String primaryWord, String secondaryLang) =>
       (select(words)

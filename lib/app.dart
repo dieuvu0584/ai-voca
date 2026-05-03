@@ -12,6 +12,7 @@ import 'features/settings/settings_screen.dart';
 import 'features/backup/backup_screen.dart';
 import 'features/import_vocab/import_screen.dart';
 import 'features/session_preview/session_preview_screen.dart';
+import 'features/vocab_list/vocab_list_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'widgets/main_screen.dart';
 
@@ -39,6 +40,7 @@ final _router = GoRouter(
     GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
     GoRoute(path: '/backup', builder: (_, _) => const BackupScreen()),
     GoRoute(path: '/import', builder: (_, _) => const ImportScreen()),
+    GoRoute(path: '/vocab-list', builder: (_, _) => const VocabListScreen()),
   ],
 );
 
